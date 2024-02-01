@@ -1,0 +1,247 @@
+create database walmartsales;
+use walmartsales;
+show tables;
+select * from wm;
+describe wm;
+
+set sql_safe_updates = 0;
+
+
+-- make a column and take all the value of other column and then drop that column
+alter table wm add (Invoice_id VARCHAR(30)) ;
+UPDATE wm
+SET Invoice_id = `Invoice ID`;
+ALTER TABLE wm
+DROP COLUMN `Invoice ID`;
+
+alter table wm add (coustomer_type VARCHAR(30)) ;
+UPDATE wm
+SET coustomer_type = `Customer type`;
+ALTER TABLE wm
+DROP COLUMN `Customer type`;
+
+alter table wm add (product_line VARCHAR(30)) ;
+UPDATE wm
+SET product_line = `Product line`;
+ALTER TABLE wm
+DROP COLUMN `Product line`;
+
+alter table wm add (unit_price VARCHAR(30)) ;
+UPDATE wm
+SET unit_price = `Unit price`;
+ALTER TABLE wm
+DROP COLUMN `Unit price`;
+
+alter table wm add (payment_method VARCHAR(30)) ;
+UPDATE wm
+SET payment_method = `Payment`;
+ALTER TABLE wm
+DROP COLUMN `Payment`;
+
+alter table wm add (gross_margin_percentage VARCHAR(30)) ;
+UPDATE wm
+SET gross_margin_percentage = `gross margin percentage`;
+ALTER TABLE wm
+DROP COLUMN `gross margin percentage`;
+
+alter table wm add (gross_income VARCHAR(30)) ;
+UPDATE wm
+SET gross_income = `gross income`;
+ALTER TABLE wm
+DROP COLUMN `gross income`;
+
+alter table wm add (VAT VARCHAR(30)) ;
+UPDATE wm
+SET VAT = `Tax 5%`;
+ALTER TABLE wm
+DROP COLUMN `Tax 5%`;
+
+
+alter table wm 
+modify Invoice_id VARCHAR(30);
+alter table wm 
+modify Branch VARCHAR(5);
+alter table wm 
+modify City VARCHAR(30);
+alter table wm 
+modify coustomer_type  VARCHAR(30);
+alter table wm 
+modify Gender VARCHAR(10);
+alter table wm 
+modify product_line VARCHAR(100);
+alter table wm 
+modify unit_price DECIMAL(10, 2);
+alter table wm 
+modify Quantity INT;
+alter table wm 
+modify VAT 	decimal(6, 4);
+alter table wm 
+modify Total  DECIMAL(10, 2);
+alter table wm 
+modify Date 	DATE;
+alter table wm 
+modify Time TIME;
+alter table wm 
+modify payment_method varchar(55);
+alter table wm 
+modify cogs DECIMAL(10, 2);
+alter table wm 
+modify gross_margin_percentage  decimal(11, 9);
+alter table wm 
+modify gross_income DECIMAL(10, 2);
+alter table wm 
+modify Rating decimal(2, 1);
+
+select * from wm;
+select *, dayname(date) as day_name,monthname(date) as month_date,
+case 
+	when time between '00:00:00' and '12:00:00' then 'Morning'
+    when time between '12:01:00' and '16:00:00' then 'Afternoon'
+    else 'Evening'
+end as time_of_day from wm;
+
+alter table wm add column 
+time_of_day varchar(50), add day_name varchar(50),add month_name varchar(50);
+
+update wm 
+set time_of_day = (case 
+	when time between '00:00:00' and '12:00:00' then 'Morning'
+    when time between '12:01:00' and '16:00:00' then 'Afternoon'
+    else 'Evening'
+end),
+day_name = dayname(date),
+month_name = monthname(date);
+
+
+-- How many unique cities does the data have?
+select count(distinct city) from wm where city is not null and city !='' ;
+
+-- In which city is each branch?
+select city, count(distinct branch) from wm group by city;
+    
+-- How many unique product lines does the data have?
+select distinct product_line from wm;
+
+-- What is the most common payment method?
+select * from wm;
+
+-- select max(cnt), payment_method from 
+-- (select payment_method,count(payment_method) as cnt from wm group by payment_method) as payment_count order by payment_method  ;
+
+select payment_method , count(payment_method) as count_of_payment_method_is_used from wm group by payment_method 
+ order by count(payment_method) desc limit 1;
+
+-- What is the most selling product line?
+
+select product_line , count(product_line) as count_of_product_line_is_used from wm group by product_line 
+ order by count(product_line) desc limit 1;
+
+select product_line , count(product_line) from wm group by product_line;
+
+-- What is the total revenue by month?
+select * from wm;
+select month_name , sum(total) from wm group by month_name;
+
+-- What month had the largest COGS?
+select month_name , sum(cogs) from wm group by month_name order by sum(cogs) desc limit 1;
+
+-- What product line had the largest revenue?
+select * from wm;
+select product_line , sum(gross_income) as revenue from wm group by product_line order by sum(gross_income) desc limit 1;
+
+-- What is the city with the largest revenue?
+select city, sum(gross_income) from wm group by city order by sum(gross_income) desc limit 1;
+
+-- What product line had the largest VAT?
+select * from wm;
+select product_line , sum(VAT) from wm group by product_line order by product_line desc limit 1;
+
+-- Fetch each product line and add a column to those product line showing "Good", "Bad". Good if its greater than average sales
+select product_line , avg(VAT+cogs) , sum(VAT+cogs) ,case
+	when sum(VAT+cogs)>avg(VAT+cogs) then "good"
+    else "bad"
+end as product_quality
+    from wm group by product_line;
+
+-- Which branch sold more products than average product sold?
+select * from wm;
+select branch, sum(quantity) from wm group by branch having sum(quantity)>(select avg(quantity) from wm);
+
+-- What is the most common product line by gender?
+select * from  wm;
+select gender, product_line , count(gender) from wm group by product_line, gender order by count(gender) desc;
+
+-- What is the average rating of each product line?
+select * from wm; 
+select product_line , round(avg(rating),2) as avg_rating from wm group by product_line ;
+
+-- --------------------------------------------------SALES ANALSIS-------------------------------------------------------------------------
+
+-- Number of sales made in each time of the day per weekday 
+select * from wm;
+-- where clause filter can be used anywhere but having clause is used for only in group by clause and for aggregate function*****
+select time_of_day, count(quantity) from wm  where day_name = 'Sunday'
+group by time_of_day ;
+
+-- Which of the customer types brings the most revenue?
+select * from wm;
+select coustomer_type, sum(total) from wm group by coustomer_type ;
+
+-- Which city has the largest tax percent/ VAT (Value Added Tax)?
+
+select max(VAT), city from wm group by city order by max(VAT) desc LIMIT 1; 
+
+-- Which customer type pays the most in VAT?
+
+select coustomer_type,max(VAT) from wm group by coustomer_type order by max(VAT) desc limit 1;
+
+-- *********************************************** Customer Query **********************************************************************
+
+-- How many unique customer types does the data have? 
+select coustomer_type, count(coustomer_type) from wm group by coustomer_type; 
+
+-- How many unique payment methods does the data have?
+select distinct payment_method from wm where payment_method !='' and payment_method is not null group by payment_method;
+
+-- What is the most common customer type?
+select coustomer_type , count(coustomer_type) from wm group by coustomer_type order by count(coustomer_type) desc limit 1;
+
+-- Which customer type buys the most?
+select coustomer_type , sum(quantity) from wm group by coustomer_type order by count(coustomer_type) desc limit 1;
+
+-- What is the gender of most of the customers?
+select gender , count(gender) as number_of_male_and_female from wm group by coustomer_type,gender;
+
+-- What is the gender distribution per branch?
+select branch ,gender,count(gender) from wm group by branch , gender order by branch asc,count(gender) desc; 
+
+-- Which time of the day do customers give most ratings?
+select * from wm;
+select time_of_day , count(rating) from wm group by time_of_day order by count(rating) desc limit 1;
+
+
+-- Which time of the day do customers give most ratings per branch?
+
+select time_of_day,branch , count(rating) from wm group by time_of_day, branch order by count(rating) desc ;
+select time_of_day,branch , count(rating) from wm group by time_of_day, branch order by count(rating) desc limit 1;
+
+
+-- Which day of the week has the best avg ratings?
+select * from wm;
+select day_name, round(avg(rating),2) from wm group by day_name order by avg(rating) desc;
+select day_name, round(avg(rating),2) from wm group by day_name order by avg(rating) desc limit 1;
+
+
+-- Which day of the week has the best average ratings per branch?
+select day_name,branch, round(avg(rating),2) from wm group by day_name,branch order by avg(rating) desc;
+select day_name,branch, round(avg(rating),2) from wm group by day_name , branch order by avg(rating) desc limit 1;
+
+
+
+
+
+
+
+
+
+
